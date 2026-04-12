@@ -78,6 +78,7 @@ gem-image -p "A watercolor painting" -o art.png -m gemini-2.5-flash-image
 | `--format` | — | `png` | Output format: `png` or `jpeg` |
 | `--config` | `-c` | — | Config file path |
 | `--model` | `-m` | — | Model name override |
+| `--force` | — | `false` | Overwrite existing output file |
 | `--debug` | — | `false` | Enable debug output |
 
 ### Output format resolution
@@ -109,6 +110,8 @@ tokens: input=218 output=1290 total=1508
 - **Prompt injection protection** — user prompts are wrapped with [nlk/guard](https://github.com/nlink-jp/nlk) nonce-tagged XML before API submission
 - **Input validation** — image files are verified by magic bytes (not just extension)
 - **Path traversal prevention** — all file paths are normalized and validated
+- **Overwrite protection** — existing files are not overwritten unless `--force` is specified
+- **Image Bomb prevention** — image dimensions are checked before decoding to prevent OOM attacks
 - **No secrets in output** — project IDs and tokens are never logged
 
 ## License

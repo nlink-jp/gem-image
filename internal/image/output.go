@@ -2,6 +2,7 @@ package image
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image/jpeg"
 	"image/png"
@@ -52,7 +53,23 @@ func isPNG(data []byte) bool {
 		data[2] == 0x4E && data[3] == 0x47
 }
 
+// MaxImageDimension is the maximum allowed width or height for image decoding.
+// Prevents Image Bomb attacks that cause OOM via extremely large pixel dimensions.
+const MaxImageDimension = 10000
+
+// ErrImageTooLarge is returned when image dimensions exceed MaxImageDimension.
+var ErrImageTooLarge = errors.New("image dimensions too large for decoding")
+
 func pngToJPEG(data []byte) ([]byte, error) {
+	// Check dimensions before full decode to prevent Image Bomb attacks
+	cfg, err := png.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("read PNG config: %w", err)
+	}
+	if cfg.Width > MaxImageDimension || cfg.Height > MaxImageDimension {
+		return nil, fmt.Errorf("%w: %dx%d (max %d)", ErrImageTooLarge, cfg.Width, cfg.Height, MaxImageDimension)
+	}
+
 	img, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, err

@@ -15,6 +15,7 @@ var (
 	ErrInvalidImage   = errors.New("invalid image format")
 	ErrFileTooLarge   = errors.New("file exceeds size limit")
 	ErrOutputDirNoDir = errors.New("output directory does not exist")
+	ErrFileExists     = errors.New("output file already exists (use --force to overwrite)")
 )
 
 // PNG magic bytes: \x89PNG\r\n\x1a\n
@@ -55,7 +56,8 @@ func ValidateImagePath(path string) (string, error) {
 }
 
 // ValidateOutputPath checks that the output directory exists and is writable.
-func ValidateOutputPath(path string) error {
+// If force is false and the output file already exists, returns ErrFileExists.
+func ValidateOutputPath(path string, force bool) error {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("resolve output path: %w", err)
@@ -68,6 +70,13 @@ func ValidateOutputPath(path string) error {
 	}
 	if !info.IsDir() {
 		return fmt.Errorf("%w: %s is not a directory", ErrOutputDirNoDir, dir)
+	}
+
+	// Check if output file already exists
+	if !force {
+		if _, err := os.Stat(abs); err == nil {
+			return fmt.Errorf("%w: %s", ErrFileExists, abs)
+		}
 	}
 
 	return nil

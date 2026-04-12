@@ -41,19 +41,45 @@ func TestValidateImagePath_Directory(t *testing.T) {
 func TestValidateOutputPath_ValidDir(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "output.png")
-	err := ValidateOutputPath(path)
+	err := ValidateOutputPath(path, false)
 	if err != nil {
 		t.Fatalf("ValidateOutputPath: %v", err)
 	}
 }
 
 func TestValidateOutputPath_NonExistentDir(t *testing.T) {
-	err := ValidateOutputPath("/nonexistent/dir/output.png")
+	err := ValidateOutputPath("/nonexistent/dir/output.png", false)
 	if err == nil {
 		t.Error("expected error for non-existent directory")
 	}
 	if !errors.Is(err, ErrOutputDirNoDir) {
 		t.Errorf("expected ErrOutputDirNoDir, got %v", err)
+	}
+}
+
+func TestValidateOutputPath_FileExists(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "existing.png")
+	if err := os.WriteFile(path, []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := ValidateOutputPath(path, false)
+	if !errors.Is(err, ErrFileExists) {
+		t.Errorf("expected ErrFileExists, got %v", err)
+	}
+}
+
+func TestValidateOutputPath_FileExistsWithForce(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "existing.png")
+	if err := os.WriteFile(path, []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := ValidateOutputPath(path, true)
+	if err != nil {
+		t.Fatalf("expected no error with --force, got %v", err)
 	}
 }
 

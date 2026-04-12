@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-04-12
+
+### Security
+
+- Prevent accidental overwrite of existing files; require `--force` to overwrite
+- Add Image Bomb prevention: check PNG dimensions before decoding to prevent OOM attacks
+
 ## [0.1.0] - 2026-04-12
 
 ### Added

@@ -27,6 +27,7 @@ var (
 	flagConfigPath string
 	flagModel      string
 	flagDebug      bool
+	flagForce      bool
 )
 
 // Exit codes
@@ -53,6 +54,7 @@ func newRootCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&flagConfigPath, "config", "c", "", "config file path")
 	cmd.Flags().StringVarP(&flagModel, "model", "m", "", "model name override")
 	cmd.Flags().BoolVar(&flagDebug, "debug", false, "enable debug output")
+	cmd.Flags().BoolVar(&flagForce, "force", false, "overwrite existing output file")
 
 	_ = cmd.MarkFlagRequired("output")
 
@@ -90,7 +92,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 
 	// 3. Validate output path
-	if err := security.ValidateOutputPath(flagOutput); err != nil {
+	if err := security.ValidateOutputPath(flagOutput, flagForce); err != nil {
 		return exitWithCode(fmt.Errorf("output: %w", err), exitInputError)
 	}
 
