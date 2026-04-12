@@ -5,14 +5,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
+	"time"
 
 	"github.com/nlink-jp/gem-image/internal/config"
+	"github.com/nlink-jp/nlk/backoff"
 	"google.golang.org/genai"
 )
 
+const maxRetries = 3
+
 var (
-	ErrNoImage      = errors.New("no image in response")
-	ErrSafetyBlock  = errors.New("request blocked by safety filter")
+	ErrNoImage     = errors.New("no image in response")
+	ErrSafetyBlock = errors.New("request blocked by safety filter")
 )
 
 // UsageInfo holds token consumption data.
@@ -47,6 +53,7 @@ type ImageInput struct {
 // Generator is the interface for generating images. Extracted for testability.
 type Generator interface {
 	Generate(ctx context.Context, opts *GenerateOpts) (*GenerateResult, error)
+	Close() error
 }
 
 // Client wraps the Gemini genai client for image generation.
@@ -54,6 +61,9 @@ type Client struct {
 	inner *genai.Client
 	model string
 }
+
+// Verify Client implements Generator at compile time.
+var _ Generator = (*Client)(nil)
 
 // New creates a Client configured for Vertex AI.
 func New(ctx context.Context, cfg *config.Config) (*Client, error) {
@@ -73,7 +83,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// Generate calls the Gemini API for image generation/editing.
+// Generate calls the Gemini API for image generation/editing with automatic retry.
 func (c *Client) Generate(ctx context.Context, opts *GenerateOpts) (*GenerateResult, error) {
 	gcConfig := &genai.GenerateContentConfig{
 		ResponseModalities: []string{
@@ -97,12 +107,40 @@ func (c *Client) Generate(ctx context.Context, opts *GenerateOpts) (*GenerateRes
 		genai.NewContentFromParts(parts, "user"),
 	}
 
-	resp, err := c.inner.Models.GenerateContent(ctx, c.model, contents, gcConfig)
-	if err != nil {
-		return nil, fmt.Errorf("generate content: %w", err)
+	bo := backoff.New(
+		backoff.WithBase(2*time.Second),
+		backoff.WithMax(30*time.Second),
+	)
+
+	var lastErr error
+	for attempt := range maxRetries + 1 {
+		resp, err := c.inner.Models.GenerateContent(ctx, c.model, contents, gcConfig)
+		if err == nil {
+			return extractResult(resp)
+		}
+
+		lastErr = err
+		if !isRetryable(err) || attempt == maxRetries {
+			return nil, fmt.Errorf("generate content: %w", err)
+		}
+
+		wait := bo.Duration(attempt)
+		log.Printf("API call failed (attempt %d/%d), retrying in %v: %v",
+			attempt+1, maxRetries+1, wait.Round(time.Second), err)
+		time.Sleep(wait)
 	}
 
-	return extractResult(resp)
+	return nil, fmt.Errorf("generate content after %d retries: %w", maxRetries, lastErr)
+}
+
+func isRetryable(err error) bool {
+	errStr := strings.ToLower(err.Error())
+	for _, k := range []string{"429", "503", "500", "unavailable", "timeout", "connection refused", "eof"} {
+		if strings.Contains(errStr, k) {
+			return true
+		}
+	}
+	return false
 }
 
 func extractResult(resp *genai.GenerateContentResponse) (*GenerateResult, error) {

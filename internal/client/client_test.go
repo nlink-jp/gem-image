@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"google.golang.org/genai"
@@ -131,5 +132,31 @@ func TestExtractResult_EmptyCandidates(t *testing.T) {
 	_, err := extractResult(resp)
 	if !errors.Is(err, ErrNoImage) {
 		t.Errorf("expected ErrNoImage, got %v", err)
+	}
+}
+
+func TestIsRetryable(t *testing.T) {
+	tests := []struct {
+		err  error
+		want bool
+	}{
+		{fmt.Errorf("Error 429: quota exceeded"), true},
+		{fmt.Errorf("Error 503: service unavailable"), true},
+		{fmt.Errorf("Error 500: internal server error"), true},
+		{fmt.Errorf("connection refused"), true},
+		{fmt.Errorf("timeout"), true},
+		{fmt.Errorf("unexpected EOF"), true},
+		{fmt.Errorf("Error 400: bad request"), false},
+		{fmt.Errorf("Error 404: not found"), false},
+		{fmt.Errorf("Error 403: forbidden"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.err.Error(), func(t *testing.T) {
+			got := isRetryable(tt.err)
+			if got != tt.want {
+				t.Errorf("isRetryable(%q) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
 	}
 }

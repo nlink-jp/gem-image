@@ -131,12 +131,14 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}
 	defer c.Close()
 
+	fmt.Fprintf(os.Stderr, "Generating image...")
 	result, err := c.Generate(ctx, &client.GenerateOpts{
 		SystemPrompt: sysPrompt,
 		UserPrompt:   wrappedPrompt,
 		Images:       images,
 		OutputFormat: outputFormat,
 	})
+	fmt.Fprintf(os.Stderr, " done.\n")
 	if err != nil {
 		if errors.Is(err, client.ErrSafetyBlock) {
 			return exitWithCode(fmt.Errorf("blocked by safety filter"), exitSafetyBlocked)

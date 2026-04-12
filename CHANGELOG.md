@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.1.1] - 2026-04-12
+## [0.2.0] - 2026-04-12
+
+### Added
+
+- Automatic retry with exponential backoff (max 3 retries) for transient API errors (429/500/503)
+- Progress feedback on stderr (`Generating image... done.`) during API calls
+- `Generator` interface for testable client design
 
 ### Security
 
