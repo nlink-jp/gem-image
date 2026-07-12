@@ -21,7 +21,7 @@ outputs generated/edited images to files. Part of util-series.
 ```bash
 make build          # → dist/gem-image
 make test           # or: go test ./...
-make build-all      # cross-compile 5 platforms
+make build-all      # cross-compile 4 platforms (darwin arm64 only; no Intel)
 make check          # vet → test → build
 ```
 
