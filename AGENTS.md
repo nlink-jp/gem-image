@@ -11,6 +11,7 @@ CLI tool for image generation and editing using Vertex AI Gemini 2.5 Flash
 make build          # Build → dist/gem-image
 make test           # Run all tests
 make build-all      # Cross-compile for 5 platforms
+make verify-release  # gate: .notarized marker + freshness (run before upload)
 make check          # vet → test → build
 make clean          # Remove dist/
 ```
