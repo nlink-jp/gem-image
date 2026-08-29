@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **Default model is now `gemini-3.1-flash-image`** (Nano Banana 2, was
+  `gemini-2.5-flash-image`), ahead of the Vertex AI Gemini 2.5 retirement
+  from 2026-10-16. Gemini 2.5 still works when set explicitly via config,
+  `GEMIMAGE_MODEL`, or `-m`.
+- **Default location is now `global`** (was `us-central1`): Vertex AI serves
+  the Gemini 3 family only from the global endpoint — regional endpoints
+  return 404 for them. Pin a regional location explicitly when going back to
+  `gemini-2.5-flash-image`.
+- Updated google.golang.org/genai to v1.70.0.
+
+### Added
+
+- Actionable error hint: requesting a Gemini 3 model from a regional endpoint
+  used to fail with a bare `404 NOT_FOUND`; the error now explains that
+  Gemini 3 models require `location = "global"`.
+- ADR-009 in `docs/{en,ja}/architecture*.md` records the migration and the
+  global-endpoint constraint.
+
+### Fixed
+
+- **Output format is now honoured for every model.** Conversion only ran
+  PNG to JPEG, so a model that returns JPEG (`gemini-3.1-flash-lite-image`)
+  wrote JPEG bytes into a `.png` file. Both directions are converted now, and
+  JPEG-to-PNG is written at 8 bits per channel instead of being widened to 16.
+
 ## [0.3.0] - 2026-07-12
 
 ### Removed

@@ -2,7 +2,7 @@
 
 ## Project summary
 
-CLI tool for image generation and editing using Vertex AI Gemini 2.5 Flash
+CLI tool for image generation and editing using Vertex AI Gemini
 (native image generation). Part of util-series.
 
 ## Build commands
@@ -38,14 +38,18 @@ gem-image/
 ## Environment variables
 
 - `GEMIMAGE_PROJECT` (required) — GCP project ID
-- `GEMIMAGE_LOCATION` (optional, default: us-central1) — Vertex AI region
-- `GEMIMAGE_MODEL` (optional, default: gemini-2.5-flash-image) — model name
+- `GEMIMAGE_LOCATION` (optional, default: global) — Vertex AI location
+- `GEMIMAGE_MODEL` (optional, default: gemini-3.1-flash-image) — model name
 - Falls back to `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION`
 
 ## Gotchas
 
-- Model always returns PNG regardless of requested format. JPEG conversion
-  is handled client-side in `internal/image/output.go`.
+- **Gemini 3 models are served from the `global` endpoint only** — a regional
+  location 404s. `internal/client` appends a hint to such 404s. Gemini 2.5
+  models still answer regionally.
+- Response encoding varies by model: PNG for most, **JPEG for
+  `gemini-3.1-flash-lite-image`**. `internal/image/output.go` transcodes in
+  both directions so the written file matches the requested format.
 - `-o` is required — no stdout binary output (terminal corruption risk).
 - Prompt injection defense uses nlk/guard (nonce-tagged XML), not the
   project-local isolation package pattern from gem-cli.

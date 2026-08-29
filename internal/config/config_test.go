@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -16,11 +17,14 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.GCP.Project != "test-project" {
 		t.Errorf("project = %q, want test-project", cfg.GCP.Project)
 	}
-	if cfg.GCP.Location != "us-central1" {
-		t.Errorf("location = %q, want us-central1", cfg.GCP.Location)
+	if cfg.GCP.Location != "global" {
+		t.Errorf("location = %q, want global (Gemini 3 image models are global-only)", cfg.GCP.Location)
 	}
-	if cfg.Model.Name != "gemini-2.5-flash-image" {
-		t.Errorf("model = %q, want gemini-2.5-flash-image", cfg.Model.Name)
+	if cfg.Model.Name != DefaultModel {
+		t.Errorf("model = %q, want %s", cfg.Model.Name, DefaultModel)
+	}
+	if !strings.HasPrefix(DefaultModel, "gemini-3") {
+		t.Errorf("DefaultModel = %q, want a Gemini 3 model", DefaultModel)
 	}
 }
 

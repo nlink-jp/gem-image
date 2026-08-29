@@ -9,6 +9,13 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// DefaultModel is the built-in model. Gemini 3 image models are served only
+// from the global endpoint, so defaultLocation is "global" to match.
+const (
+	DefaultModel    = "gemini-3.1-flash-image"
+	defaultLocation = "global"
+)
+
 // Config holds all gem-image configuration.
 type Config struct {
 	GCP   GCPConfig   `toml:"gcp"`
@@ -31,10 +38,10 @@ type ModelConfig struct {
 func Load(path string) (*Config, error) {
 	cfg := &Config{
 		GCP: GCPConfig{
-			Location: "us-central1",
+			Location: defaultLocation,
 		},
 		Model: ModelConfig{
-			Name: "gemini-2.5-flash-image",
+			Name: DefaultModel,
 		},
 	}
 

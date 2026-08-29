@@ -58,8 +58,9 @@ type Generator interface {
 
 // Client wraps the Gemini genai client for image generation.
 type Client struct {
-	inner *genai.Client
-	model string
+	inner    *genai.Client
+	model    string
+	location string
 }
 
 // Verify Client implements Generator at compile time.
@@ -75,7 +76,11 @@ func New(ctx context.Context, cfg *config.Config) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create genai client: %w", err)
 	}
-	return &Client{inner: client, model: cfg.Model.Name}, nil
+	return &Client{
+		inner:    client,
+		model:    cfg.Model.Name,
+		location: cfg.GCP.Location,
+	}, nil
 }
 
 // Close releases the client resources.
@@ -121,7 +126,7 @@ func (c *Client) Generate(ctx context.Context, opts *GenerateOpts) (*GenerateRes
 
 		lastErr = err
 		if !isRetryable(err) || attempt == maxRetries {
-			return nil, fmt.Errorf("generate content: %w", err)
+			return nil, fmt.Errorf("generate content: %w", hintGemini3Location(err, c.model, c.location))
 		}
 
 		wait := bo.Duration(attempt)
@@ -130,7 +135,26 @@ func (c *Client) Generate(ctx context.Context, opts *GenerateOpts) (*GenerateRes
 		time.Sleep(wait)
 	}
 
-	return nil, fmt.Errorf("generate content after %d retries: %w", maxRetries, lastErr)
+	return nil, fmt.Errorf("generate content after %d retries: %w", maxRetries,
+		hintGemini3Location(lastErr, c.model, c.location))
+}
+
+// hintGemini3Location appends an actionable hint to a NOT_FOUND error when a
+// Gemini 3 model is requested from a regional endpoint: Vertex AI serves the
+// Gemini 3 family only from the global endpoint (regional endpoints return
+// 404 NOT_FOUND, which says nothing about the location being the cause).
+func hintGemini3Location(err error, model, location string) error {
+	if err == nil || location == "global" {
+		return err
+	}
+	if !strings.HasPrefix(strings.TrimPrefix(model, "google/"), "gemini-3") {
+		return err
+	}
+	errStr := strings.ToLower(err.Error())
+	if !strings.Contains(errStr, "not_found") && !strings.Contains(errStr, "404") {
+		return err
+	}
+	return fmt.Errorf("%w (hint: %s is a Gemini 3 model, served only from the global endpoint — set location = \"global\")", err, model)
 }
 
 func isRetryable(err error) bool {

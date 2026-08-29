@@ -32,17 +32,17 @@ var (
 
 // Exit codes
 const (
-	exitOK             = 0
-	exitGeneralError   = 1
-	exitInputError     = 2
-	exitAPIError       = 3
-	exitSafetyBlocked  = 4
+	exitOK            = 0
+	exitGeneralError  = 1
+	exitInputError    = 2
+	exitAPIError      = 3
+	exitSafetyBlocked = 4
 )
 
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "gem-image",
-		Short:        "Generate and edit images using Gemini 2.5 Flash",
+		Short:        "Generate and edit images using Vertex AI Gemini",
 		SilenceUsage: true,
 		RunE:         runGenerate,
 	}

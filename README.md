@@ -1,6 +1,6 @@
 # gem-image
 
-CLI tool for image generation and editing using Vertex AI Gemini 2.5 Flash (native image generation).
+CLI tool for image generation and editing using Vertex AI Gemini (native image generation).
 
 Generate images from text prompts or edit existing images via the command line.
 Designed for batch workflows through shell scripts and pipelines.
@@ -24,8 +24,8 @@ make build
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `GEMIMAGE_PROJECT` | Yes | — | GCP project ID |
-| `GEMIMAGE_LOCATION` | No | `us-central1` | Vertex AI region |
-| `GEMIMAGE_MODEL` | No | `gemini-2.5-flash-image` | Gemini model name |
+| `GEMIMAGE_LOCATION` | No | `global` | Vertex AI location |
+| `GEMIMAGE_MODEL` | No | `gemini-3.1-flash-image` | Gemini model name |
 
 Falls back to `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` if tool-specific
 variables are not set.
@@ -35,13 +35,27 @@ Alternatively, create `~/.config/gem-image/config.toml`:
 ```toml
 [gcp]
 project  = "your-project-id"
-location = "us-central1"
+location = "global"
 
 [model]
-name = "gemini-2.5-flash-image"
+name = "gemini-3.1-flash-image"
 ```
 
 Priority: CLI flags > environment variables > config file > defaults.
+
+### Models
+
+| Model | Endpoint | Notes |
+|-------|----------|-------|
+| `gemini-3.1-flash-image` (default) | `global` only | Balanced quality and cost; returns PNG |
+| `gemini-3-pro-image` | `global` only | Highest quality, roughly 2x the price; returns PNG |
+| `gemini-3.1-flash-lite-image` | `global` only | Cheapest; **returns JPEG**, transcoded when PNG output is requested |
+| `gemini-2.5-flash-image` | `global`, `us-central1` | Previous default; the Gemini 2.5 family retires on Vertex AI from 2026-10-16 |
+
+**Vertex AI serves the Gemini 3 family from the global endpoint only** — a
+regional `location` returns `404 NOT_FOUND` for them. Set
+`location = "us-central1"` explicitly if you pin the model back to
+`gemini-2.5-flash-image`.
 
 ## Usage
 
@@ -65,7 +79,7 @@ gem-image -p "A mountain landscape" -o landscape.bin --format jpeg
 echo "A minimalist logo for a coffee shop" | gem-image -o logo.png
 
 # Override model
-gem-image -p "A watercolor painting" -o art.png -m gemini-2.5-flash-image
+gem-image -p "A watercolor painting" -o art.png -m gemini-3-pro-image
 ```
 
 ### Flags
@@ -86,6 +100,10 @@ gem-image -p "A watercolor painting" -o art.png -m gemini-2.5-flash-image
 1. If `-o` has a `.png`/`.jpg`/`.jpeg` extension → use that format
 2. Otherwise, use `--format` flag value
 3. Default: `png`
+
+Each model picks the encoding of what it returns — PNG for most, JPEG for
+`gemini-3.1-flash-lite-image`. Whatever comes back is transcoded client-side so
+the written file always matches the resolved format.
 
 ### Exit codes
 

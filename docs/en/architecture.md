@@ -143,8 +143,8 @@ CLI flags > environment variables > config file > defaults.
 | Variable | Config File | Default | Description |
 |----------|------------|---------|-------------|
 | `GEMIMAGE_PROJECT` | `gcp.project` | — (required) | GCP project ID |
-| `GEMIMAGE_LOCATION` | `gcp.location` | `us-central1` | Vertex AI region |
-| `GEMIMAGE_MODEL` | `model.name` | `gemini-2.5-flash-image` | Model name |
+| `GEMIMAGE_LOCATION` | `gcp.location` | `global` | Vertex AI location |
+| `GEMIMAGE_MODEL` | `model.name` | `gemini-3.1-flash-image` | Model name |
 | `GOOGLE_CLOUD_PROJECT` | — | — | Project ID fallback |
 | `GOOGLE_CLOUD_LOCATION` | — | — | Region fallback |
 
@@ -193,6 +193,47 @@ Extract token consumption from `UsageMetadata` in API responses and display on s
 ```
 tokens: input=150 output=1290 total=1440
 ```
+
+---
+
+## ADR-009: Default to Gemini 3.1 Flash Image on the Global Endpoint
+
+### Decision
+
+Default `model.name` to `gemini-3.1-flash-image` and `gcp.location` to
+`global` (was `gemini-2.5-flash-image` / `us-central1`).
+
+### Rationale
+
+- The Gemini 2.5 family retires on Vertex AI from 2026-10-16; staying on
+  `gemini-2.5-flash-image` gives users a default with an end date.
+- `gemini-3.1-flash-image` is the same tier as the outgoing default — the
+  flash image model — so quality and cost characteristics stay comparable
+  (roughly 1.7x the per-image price at 1K).
+- **Vertex AI serves the Gemini 3 family from the global endpoint only.**
+  Verified 2026-08-30: `gemini-3.1-flash-image`, `gemini-3-pro-image` and
+  `gemini-3.1-flash-lite-image` all return `404 NOT_FOUND` from
+  `us-central1` and `asia-northeast1`, and answer from `global`. The model
+  default and the location default therefore have to move together.
+- A regional 404 says nothing about the location being the cause, so the
+  client appends an explicit hint when a `gemini-3*` model 404s from a
+  non-global location.
+
+### Consequences
+
+- Users pinned to `gemini-2.5-flash-image` must now set a regional
+  `location` explicitly (that model answers from `global` too, so the
+  default keeps working for them either way).
+- The response encoding is no longer uniform: `gemini-3.1-flash-lite-image`
+  returns JPEG where the others return PNG. Format conversion in
+  `internal/image` runs in both directions rather than PNG to JPEG only.
+
+### Alternatives Considered
+
+- `gemini-3-pro-image`: highest quality, but roughly 2x the price of flash —
+  rejected as a default, available via `-m`.
+- `gemini-3.1-flash-lite-image`: cheapest, but returns JPEG, which makes the
+  common `-o out.png` case a lossy re-encode — rejected as a default.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ## Project overview
 
-CLI tool for image generation and editing using Vertex AI Gemini 2.5 Flash
+CLI tool for image generation and editing using Vertex AI Gemini
 (native image generation). Accepts text prompts and optional input images,
 outputs generated/edited images to files. Part of util-series.
 
@@ -30,8 +30,8 @@ make check          # vet → test → build
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `GEMIMAGE_PROJECT` | Yes | — | GCP project ID |
-| `GEMIMAGE_LOCATION` | No | `us-central1` | Vertex AI region |
-| `GEMIMAGE_MODEL` | No | `gemini-2.5-flash-image` | Model name |
+| `GEMIMAGE_LOCATION` | No | `global` | Vertex AI location (Gemini 3 is global-only) |
+| `GEMIMAGE_MODEL` | No | `gemini-3.1-flash-image` | Model name |
 
 ## Key dependencies
 
@@ -44,5 +44,5 @@ make check          # vet → test → build
 
 - `internal/config/` — TOML + environment variable configuration
 - `internal/client/` — Vertex AI Gemini client (GenerateContent with image modality)
-- `internal/image/` — image file I/O, PNG-to-JPEG conversion
+- `internal/image/` — image file I/O, PNG/JPEG transcoding
 - `internal/security/` — nlk/guard wrapper, path validation, magic byte verification

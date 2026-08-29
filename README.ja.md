@@ -1,6 +1,6 @@
 # gem-image
 
-Vertex AI Gemini 2.5 Flash（ネイティブ画像生成）を使った画像生成・編集CLI。
+Vertex AI Gemini（ネイティブ画像生成）を使った画像生成・編集CLI。
 
 テキストプロンプトからの画像生成や、既存画像の編集をコマンドラインから実行する。
 シェルスクリプトやパイプラインを通じたバッチ処理に対応。
@@ -24,8 +24,8 @@ make build
 | 変数 | 必須 | デフォルト | 説明 |
 |------|------|-----------|------|
 | `GEMIMAGE_PROJECT` | はい | — | GCPプロジェクトID |
-| `GEMIMAGE_LOCATION` | いいえ | `us-central1` | Vertex AIリージョン |
-| `GEMIMAGE_MODEL` | いいえ | `gemini-2.5-flash-image` | Geminiモデル名 |
+| `GEMIMAGE_LOCATION` | いいえ | `global` | Vertex AIロケーション |
+| `GEMIMAGE_MODEL` | いいえ | `gemini-3.1-flash-image` | Geminiモデル名 |
 
 ツール固有の変数が未設定の場合、`GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` にフォールバックする。
 
@@ -34,13 +34,26 @@ make build
 ```toml
 [gcp]
 project  = "your-project-id"
-location = "us-central1"
+location = "global"
 
 [model]
-name = "gemini-2.5-flash-image"
+name = "gemini-3.1-flash-image"
 ```
 
 優先順位: CLIフラグ > 環境変数 > 設定ファイル > デフォルト値
+
+### モデル
+
+| モデル | エンドポイント | 備考 |
+|--------|---------------|------|
+| `gemini-3.1-flash-image`（デフォルト） | `global` のみ | 品質とコストのバランス型。PNGを返す |
+| `gemini-3-pro-image` | `global` のみ | 最高品質。単価は約2倍。PNGを返す |
+| `gemini-3.1-flash-lite-image` | `global` のみ | 最安。**JPEGを返す**ため、PNG出力指定時は変換される |
+| `gemini-2.5-flash-image` | `global` / `us-central1` | 旧デフォルト。Gemini 2.5系はVertex AIで2026-10-16以降に廃止 |
+
+**Vertex AIはGemini 3系をglobalエンドポイントでのみ提供する** — リージョナルな
+`location` を指定すると `404 NOT_FOUND` になる。`gemini-2.5-flash-image` に
+戻す場合は `location = "us-central1"` を明示すること。
 
 ## 使い方
 
@@ -64,7 +77,7 @@ gem-image -p "山の風景" -o landscape.bin --format jpeg
 echo "コーヒーショップのミニマルなロゴ" | gem-image -o logo.png
 
 # モデルの上書き
-gem-image -p "水彩画" -o art.png -m gemini-2.5-flash-image
+gem-image -p "水彩画" -o art.png -m gemini-3-pro-image
 ```
 
 ### フラグ
@@ -85,6 +98,10 @@ gem-image -p "水彩画" -o art.png -m gemini-2.5-flash-image
 1. `-o` の拡張子が `.png`/`.jpg`/`.jpeg` → その形式を使用
 2. それ以外は `--format` フラグの値を使用
 3. デフォルト: `png`
+
+返却形式はモデルごとに異なる（多くはPNG、`gemini-3.1-flash-lite-image` はJPEG）。
+どちらが返ってきてもクライアント側で変換するため、書き出されるファイルは常に
+決定した形式と一致する。
 
 ### 終了コード
 

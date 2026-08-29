@@ -145,8 +145,8 @@ CLI フラグ > 環境変数 > 設定ファイル > デフォルト値
 | 環境変数 | 設定ファイル | デフォルト | 説明 |
 |---------|------------|-----------|------|
 | `GEMIMAGE_PROJECT` | `gcp.project` | — (必須) | GCP プロジェクト ID |
-| `GEMIMAGE_LOCATION` | `gcp.location` | `us-central1` | Vertex AI リージョン |
-| `GEMIMAGE_MODEL` | `model.name` | `gemini-2.5-flash-image` | モデル名 |
+| `GEMIMAGE_LOCATION` | `gcp.location` | `global` | Vertex AI ロケーション |
+| `GEMIMAGE_MODEL` | `model.name` | `gemini-3.1-flash-image` | モデル名 |
 | `GOOGLE_CLOUD_PROJECT` | — | — | プロジェクト ID フォールバック |
 | `GOOGLE_CLOUD_LOCATION` | — | — | リージョン フォールバック |
 
@@ -196,6 +196,45 @@ stderr に表示する。
 ```
 tokens: input=150 output=1290 total=1440
 ```
+
+---
+
+## ADR-009: 既定モデルを Gemini 3.1 Flash Image / global エンドポイントに変更
+
+### 決定
+
+`model.name` の既定を `gemini-3.1-flash-image`、`gcp.location` の既定を
+`global` にする（従来は `gemini-2.5-flash-image` / `us-central1`）。
+
+### 理由
+
+- Gemini 2.5 系は Vertex AI で 2026-10-16 以降に廃止される。
+  `gemini-2.5-flash-image` のままでは既定値に期限がある状態になる。
+- `gemini-3.1-flash-image` は従来の既定と同じ flash 画像モデル層であり、
+  品質・コスト特性が近い（1K で1枚あたり単価は約1.7倍）。
+- **Vertex AI は Gemini 3 系を global エンドポイントでのみ提供する。**
+  2026-08-30 実測: `gemini-3.1-flash-image` / `gemini-3-pro-image` /
+  `gemini-3.1-flash-lite-image` はいずれも `us-central1` と
+  `asia-northeast1` で `404 NOT_FOUND`、`global` で応答する。よってモデルと
+  location の既定は同時に動かす必要がある。
+- リージョナルでの 404 は location が原因だと分からないため、`gemini-3*`
+  が non-global で 404 になった場合はクライアント側でヒントを付加する。
+
+### 影響
+
+- `gemini-2.5-flash-image` を使い続ける利用者は `location` を明示的に
+  リージョンへ設定する必要がある（同モデルは `global` でも応答するため、
+  既定のままでも動作はする）。
+- レスポンスの形式が一律ではなくなった。`gemini-3.1-flash-lite-image` は
+  JPEG を返し、他は PNG を返す。`internal/image` の形式変換は
+  PNG→JPEG の一方向から双方向に変更した。
+
+### 検討した代替案
+
+- `gemini-3-pro-image`: 最高品質だが単価が flash の約2倍 — 既定としては
+  却下。`-m` で選択可能。
+- `gemini-3.1-flash-lite-image`: 最安だが JPEG を返すため、一般的な
+  `-o out.png` が再エンコードになる — 既定としては却下。
 
 ---
 

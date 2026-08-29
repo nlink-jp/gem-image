@@ -105,10 +105,10 @@ func (c *Config) ApplyFlags(model string)
 ```toml
 [gcp]
 project  = "your-project-id"
-location = "us-central1"
+location = "global"
 
 [model]
-name = "gemini-2.5-flash-image"
+name = "gemini-3.1-flash-image"
 ```
 
 ### internal/client

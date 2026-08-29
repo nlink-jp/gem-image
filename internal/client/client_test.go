@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"google.golang.org/genai"
@@ -156,6 +157,46 @@ func TestIsRetryable(t *testing.T) {
 			got := isRetryable(tt.err)
 			if got != tt.want {
 				t.Errorf("isRetryable(%q) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHintGemini3Location(t *testing.T) {
+	notFound := errors.New("Error 404, Message: Publisher Model `projects/p/locations/us-central1/publishers/google/models/gemini-3.1-flash-image` was not found: NOT_FOUND")
+	quota := errors.New("Error 429: quota exceeded")
+
+	tests := []struct {
+		name     string
+		err      error
+		model    string
+		location string
+		wantHint bool
+	}{
+		{"gemini3 image regional 404 gets hint", notFound, "gemini-3.1-flash-image", "us-central1", true},
+		{"google/ prefix still recognized", notFound, "google/gemini-3.1-flash-image", "us-central1", true},
+		{"pro image regional 404 gets hint", notFound, "gemini-3-pro-image", "asia-northeast1", true},
+		{"global location needs no hint", notFound, "gemini-3.1-flash-image", "global", false},
+		{"gemini 2.5 regional 404 is genuine", notFound, "gemini-2.5-flash-image", "us-central1", false},
+		{"non-404 error passes through", quota, "gemini-3.1-flash-image", "us-central1", false},
+		{"nil error stays nil", nil, "gemini-3.1-flash-image", "us-central1", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hintGemini3Location(tt.err, tt.model, tt.location)
+			if tt.err == nil {
+				if got != nil {
+					t.Fatalf("hintGemini3Location(nil) = %v, want nil", got)
+				}
+				return
+			}
+			if !errors.Is(got, tt.err) {
+				t.Errorf("original error not wrapped: %v", got)
+			}
+			hinted := strings.Contains(got.Error(), "global endpoint")
+			if hinted != tt.wantHint {
+				t.Errorf("hint present = %v, want %v (%q)", hinted, tt.wantHint, got)
 			}
 		})
 	}
