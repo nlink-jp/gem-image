@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
+	"github.com/nlink-jp/toml"
 )
 
 // DefaultModel is the built-in model. Gemini 3 image models are served only

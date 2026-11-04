@@ -278,7 +278,7 @@ func ValidateImageData(data []byte) error
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `github.com/spf13/cobra` | latest | CLI framework |
-| `github.com/BurntSushi/toml` | latest | Config file parsing |
+| `github.com/nlink-jp/toml` | latest | Config file parsing (strict: an unknown key is an error) |
 | `google.golang.org/genai` | latest | Gemini API SDK |
 | `github.com/nlink-jp/nlk` | latest | guard (prompt injection protection) |
 

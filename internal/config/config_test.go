@@ -108,6 +108,23 @@ name = "toml-model"
 	}
 }
 
+// A key the config does not know — a typo, or a setting from another tool —
+// is refused with its name rather than silently ignored, so a setting that
+// seems to do nothing cannot be one that was never read.
+func TestLoadRefusesUnknownKeys(t *testing.T) {
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
+	t.Setenv("GEMIMAGE_PROJECT", "")
+	cfgPath := filepath.Join(t.TempDir(), "config.toml")
+	body := "[gcp]\nproject = \"p\"\n\n[model]\nnmae = \"m\"\n"
+	if err := os.WriteFile(cfgPath, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "model.nmae") {
+		t.Fatalf("Load = %v, want an error naming model.nmae", err)
+	}
+}
+
 func TestLoad_MissingProject(t *testing.T) {
 	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
 	t.Setenv("GEMIMAGE_PROJECT", "")

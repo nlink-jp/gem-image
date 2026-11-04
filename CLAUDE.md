@@ -38,7 +38,7 @@ make check          # vet → test → build
 - `google.golang.org/genai` — Google Gemini SDK (Vertex AI backend)
 - `github.com/nlink-jp/nlk` — guard (prompt injection protection)
 - `github.com/spf13/cobra` — CLI framework
-- `github.com/BurntSushi/toml` — config file parsing
+- `github.com/nlink-jp/toml` — config file parsing (strict: an unknown key is an error)
 
 ## Architecture
 

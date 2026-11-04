@@ -42,6 +42,8 @@ name = "gemini-3.1-flash-image"
 ```
 
 Priority: CLI flags > environment variables > config file > defaults.
+A key the config file does not know — a typo, say — is an error that names
+it, not a setting silently ignored.
 
 ### Models
 
